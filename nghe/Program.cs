@@ -11,6 +11,20 @@ namespace nghe
     {
         static readonly string NOT_AVAILABLE_MSG = ConfigReader.Read("NOT_AVAILABLE_MSG", "Il n'existe plus de plage horaire libre pour votre demande de rendez-vous. Veuillez recommencer ultérieurement.");
 
+        static async Task<int> TakeScreenShot()
+        {
+
+            await new BrowserFetcher().DownloadAsync(BrowserFetcher.DefaultRevision);
+            var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+            {
+                Headless = true
+            });
+            var page = await browser.NewPageAsync();
+            await page.GoToAsync("http://www.hauts-de-seine.gouv.fr/booking/create/13525").ConfigureAwait(false);
+            await page.ScreenshotAsync("./rdv.jpg").ConfigureAwait(false);
+            return 0;
+        }
+
         static async Task<string> GetRDVContent()
         {
 
