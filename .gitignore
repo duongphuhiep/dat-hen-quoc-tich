@@ -890,3 +890,4 @@ $RECYCLE.BIN/
 .history/
 _dist/
 lcov.info
+logs/

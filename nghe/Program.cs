@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using PuppeteerSharp;
 using Serilog;
@@ -12,10 +14,10 @@ namespace nghe
     {
         static readonly string NOT_AVAILABLE_MSG = ConfigReader.Read("NOT_AVAILABLE_MSG", "Il n'existe plus de plage horaire libre pour votre demande de rendez-vous. Veuillez recommencer ultérieurement.");
         static readonly string SCREENSHOT_FOLDER = ConfigReader.Read("SCREENSHOT_FOLDER", "./");
+        static readonly ViberAlertSender AlertSender = new ViberAlertSender(ConfigReader.Read("ViberAuthToken", "secret"));
 
         static async Task<int> TakeScreenShot()
         {
-
             await new BrowserFetcher().DownloadAsync(BrowserFetcher.DefaultRevision);
             var browser = await Puppeteer.LaunchAsync(new LaunchOptions
             {
@@ -33,13 +35,20 @@ namespace nghe
             var screenCaptureFilePath = Path.Combine(SCREENSHOT_FOLDER, screenCaptureFileName);
             await page.ScreenshotAsync(screenCaptureFilePath).ConfigureAwait(false);
             Log.Debug($"Screen captured {screenCaptureFilePath}");
-            return screenCaptureFileName;
+            return screenCaptureFilePath;
         }
 
-        static void SendAlert(string message)
+        static async Task SendAlert(string message)
         {
-            Log.Information(ArrayDisplayer.DefaultEllipsis(message, 100, "..."));
-            //TODO send to viber / zalo
+            //cut off the message in case it is too long
+            message = ArrayDisplayer.DefaultEllipsis(message, 100, "...");
+
+            Log.Information(message);
+
+            var receivers = Settings.Default.ViberReceiverIDs.Cast<string>().ToArray();
+            var sendResult = await AlertSender.Send(message, receivers).ConfigureAwait(false);
+
+            Log.Information("Send alert: "+sendResult);
         }
 
         /// <summary>
@@ -62,11 +71,10 @@ namespace nghe
             var page = await browser.NewPageAsync().ConfigureAwait(false);
             await page.GoToAsync(URL).ConfigureAwait(false);
             await page.ClickAsync("input#condition").ConfigureAwait(false);
+            await Task.Delay(1000).ConfigureAwait(false); //make the browser breath
             await page.ClickAsync("input.Bbutton[name='nextButton']").ConfigureAwait(false);
 
-            // var pha = await page.QuerySelectorAsync("form#FormBookingCreate").ConfigureAwait(false);
-            // string pha2 = await pha.EvaluateFunctionAsync<string>("(element) => {return element.innerText}").ConfigureAwait(false);
-
+            await Task.Delay(1000).ConfigureAwait(false); //make the browser breath
             var contentNode = await page.QuerySelectorAsync("form#FormBookingCreate").ConfigureAwait(false);
             if (contentNode != null)
             {
@@ -77,14 +85,14 @@ namespace nghe
                 }
                 else
                 {
-                    var screenCaptureFileName = CaptureScreen(page);
-                    return $"Detect changed. Checkout '{screenCaptureFileName}' {content}";
+                    var screenCaptureFileName = await CaptureScreen(page).ConfigureAwait(false);
+                    return $"Go to the website NOW! Checkout '{screenCaptureFileName}' {content}";
                 }
             }
             else
             {
-                var screenCaptureFileName = CaptureScreen(page);
-                return "Detect changed. Checkout '{screenCaptureFileName}' form#FormBookingCreate empty";
+                var screenCaptureFileName = await CaptureScreen(page).ConfigureAwait(false);
+                return $"Go to the website NOW! Checkout '{screenCaptureFileName}' form#FormBookingCreate empty";
             }
         }
 
@@ -114,7 +122,7 @@ namespace nghe
                     Log.Debug("no");
                     return;
                 }
-                SendAlert(alertContent);
+                await SendAlert(alertContent).ConfigureAwait(false);
             }
         }
 
@@ -126,6 +134,7 @@ namespace nghe
 
             try
             {
+                //SendAlert("Test gui tu C#! sorry Nga dung quan tam").Wait();
                 Run().Wait();
             }
             catch (Exception ex)
