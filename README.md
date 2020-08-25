@@ -1,3 +1,13 @@
-Nghe lich dat hen RDV lam quoc tich o prefecture
+# Dat hen quoc tich
 
-TODO gui alert vao Viber cua Linh
+* Nghe lich dat hen RDV lam quoc tich o prefecture
+* Gui alert vao Viber cua Linh
+
+## Publish
+
+Full format
+
+```
+cd nghe
+dotnet publish -r win-x64 -c Release /p:publishsinglefile=true
+```

@@ -1,6 +1,5 @@
 using Serilog;
-using System;
-using ToolsPack.Config;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -18,7 +17,7 @@ namespace nghe.tests
         }
 
         [Fact]
-        public async void SendTest()
+        public async Task SendTest()
         {
             const string ViberAuthToken = "secret";
             var sender = new ViberAlertSender(ViberAuthToken);
