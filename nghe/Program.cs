@@ -16,20 +16,8 @@ namespace nghe
         private static readonly string PREFECTURE_URL = ConfigReader.Read("PREFECTURE_URL", "http://www.hauts-de-seine.gouv.fr/booking/create/13525");
         private static readonly ViberAlertSender AlertSender = new ViberAlertSender(ConfigReader.Read("ViberAuthToken", "secret"));
 
-        private static async Task<int> TakeScreenShot()
-        {
-            await new BrowserFetcher().DownloadAsync(BrowserFetcher.DefaultRevision);
-            var browser = await Puppeteer.LaunchAsync(new LaunchOptions
-            {
-                Headless = true
-            });
-            var page = await browser.NewPageAsync();
-            await page.GoToAsync("http://www.hauts-de-seine.gouv.fr/booking/create/13525").ConfigureAwait(false);
-            await page.ScreenshotAsync("./rdv.jpg").ConfigureAwait(false);
-            return 0;
-        }
 
-        private static async Task<string> CaptureScreen(Page page)
+        private static async Task<string> CaptureScreen(IPage page)
         {
             string screenCaptureFileName = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff") + ".jpg";
             var screenCaptureFilePath = Path.Combine(SCREENSHOT_FOLDER, screenCaptureFileName);
@@ -59,7 +47,7 @@ namespace nghe
         /// <returns></returns>
         private static async Task<CrawlResult> Crawl()
         {
-            await new BrowserFetcher().DownloadAsync(BrowserFetcher.DefaultRevision).ConfigureAwait(false);
+            await new BrowserFetcher().DownloadAsync(BrowserFetcher.DefaultChromiumRevision).ConfigureAwait(false);
             var browser = await Puppeteer.LaunchAsync(new LaunchOptions
             {
                 Headless = true
